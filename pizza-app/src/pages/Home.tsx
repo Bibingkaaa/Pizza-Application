@@ -1,6 +1,6 @@
+import React, { useState, useEffect } from "react";
 import { LuPizza, LuHeart, LuSearch } from "react-icons/lu";
 import { FaHome } from "react-icons/fa";
-import { useState, useEffect } from "react";
 import { Card } from "../components/Card";
 import { Sidebar } from "../components/Sidebar";
 
@@ -23,15 +23,32 @@ interface Recipe {
 export const Home = () => {
 const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
 const [recipes, setRecipes] = useState<Recipe[]>([]);
+const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 const [loading, setLoading] = useState(true);
 const [searchQuery, setSearchQuery] = useState('');
+const [mealTypes, setMealTypes] = useState<string[]>([]);
+const [selectedMeals, setSelectedMeals] = useState<Set<string>>(new Set());
+
+const applyFilters = (data: Recipe[]) => {
+  let filtered = data;
+
+  if (selectedMeals.size) {
+    filtered = filtered.filter(r => {
+      if (Array.isArray(r.mealType)) return r.mealType.some(m => selectedMeals.has(m));
+      return r.mealType ? selectedMeals.has(r.mealType) : false;
+    });
+  }
+
+  return filtered;
+};
 
 const getAllRecipes = async () => {
   try {
     const response = await fetch('https://dummyjson.com/recipes');
     const data = await response.json();
     console.log(data);
-    setRecipes(data.recipes);
+    setAllRecipes(data.recipes);
+    setMealTypes(Array.from(new Set(data.recipes.flatMap((r: Recipe) => r.mealType ? (Array.isArray(r.mealType) ? r.mealType : [r.mealType]) : []))));
     setLoading(false);
   } catch (error) {
     console.error('Error fetching recipes:', error);
@@ -51,7 +68,7 @@ const searchRecipes = async (query: string) => {
     const response = await fetch(`https://dummyjson.com/recipes/search?q=${query}`);
     const data = await response.json();
     console.log(data);
-    setRecipes(data.recipes);
+    setAllRecipes(data.recipes);
     setLoading(false);
   } catch (error) {
     console.error('Error searching recipes:', error);
@@ -65,8 +82,33 @@ const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   searchRecipes(query);
 };
 
+const loadMealTypes = async () => {
+  try {
+    const response = await fetch('https://dummyjson.com/recipes/meal-type/snack');
+    const data = await response.json();
+    console.log(data);
+    const fromEndpoint = data.recipes?.flatMap((r: any) => r.mealType ? (Array.isArray(r.mealType) ? r.mealType : [r.mealType]) : []) || [];
+    setMealTypes(prev => Array.from(new Set([...prev, ...fromEndpoint])));
+  } catch (error) {
+    console.error('Error fetching meal types:', error);
+  }
+};
+
+
+const toggleMeal = (meal: string) => {
+  const next = new Set(selectedMeals);
+  next.has(meal) ? next.delete(meal) : next.add(meal);
+  setSelectedMeals(next);
+};
+
+
+useEffect(() => {
+  setRecipes(applyFilters(allRecipes));
+}, [selectedMeals, allRecipes]);
+
 useEffect(() => {
   getAllRecipes();
+  loadMealTypes();
 }, []);
 
   const NavItem = ({ icon, label, active = false }: { icon: any, label: string, active?: boolean }) => (
@@ -115,12 +157,32 @@ useEffect(() => {
       <div className="flex flex-1 overflow-hidden">
         
      
-        <aside className="w-64 bg-white p-6 hidden lg:flex flex-col gap-8 border-r border-gray-100 overflow-y-auto">
+        <aside className="w-64 bg-white p-6 hidden lg:flex flex-col gap-6 border-r border-gray-100 overflow-y-auto">
           <div className="space-y-2">
             <NavItem icon={<FaHome />} label="Home" active />
             <NavItem icon={<LuHeart />} label="Favorites" />
           </div>
-   
+
+          <hr className="border-gray-100" />
+          <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Filters</h3>
+
+          <div className="space-y-3">
+
+            <div>
+              <p className="text-xs font-semibold text-slate-700 mb-2">Meal</p>
+              <div className="flex flex-wrap gap-2">
+                {(mealTypes.length ? mealTypes : ['snack']).map(meal => (
+                  <button
+                    key={meal}
+                    onClick={() => toggleMeal(meal)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${selectedMeals.has(meal) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'}`}
+                  >
+                    {meal}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </aside>
 
         <main className="flex-1 overflow-y-auto p-8 bg-slate-50/50 relative">
@@ -131,7 +193,7 @@ useEffect(() => {
                   <h2 className="text-2xl font-bold text-slate-900">List of Recipes</h2>
                   <p className="text-slate-500 text-sm">recipe names, ingredients, instructions, and images, </p>
                 </div>
-                <button className="flex justify-center items-center gap-2 w-32 h-12 cursor-pointer rounded-md shadow-2xl text-white font-semibold bg-gradient-to-r from-[#14b8a6] via-[#059669] to-[#047857] hover:shadow-xl hover:shadow-green-500 hover:scale-105 duration-300 hover:from-[#047857] hover:to-[#14b8a6]">
+                <button className="flex justify-center items-center gap-2 w-27 h-12 cursor-pointer rounded-md shadow-2xl text-white font-semibold bg-gradient-to-r from-[#14b8a6] via-[#059669] to-[#047857] hover:shadow-xl hover:shadow-green-500 hover:scale-105 duration-300 hover:from-[#047857] hover:to-[#14b8a6]">
                   <svg 
                     className="w-6 h-6" 
                     stroke="currentColor" 
