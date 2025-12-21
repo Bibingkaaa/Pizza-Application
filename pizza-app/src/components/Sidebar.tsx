@@ -68,7 +68,7 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
   
 
   <div className="flex items-center gap-2">
-    {/* Edit Button */}
+
     <button
       onClick={() => console.log("Edit clicked")}
       className="p-2 rounded-full shadow-sm bg-white/80 hover:bg-blue-50 transition-colors group"
@@ -77,7 +77,6 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
       <LuPencil size={18} className="text-slate-400 group-hover:text-green-500" />
     </button>
 
-    {/* Delete Button */}
     <button
       onClick={() => console.log("Delete clicked")}
       className="p-2 rounded-full shadow-sm bg-white/80 hover:bg-red-50 transition-colors group"
@@ -86,7 +85,7 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
       <LuTrash2 size={18} className="text-slate-400 group-hover:text-red-500" />
     </button>
 
-    {/* Favorite Button */}
+
     <button
       onClick={() => setIsFavorite(!isFavorite)}
       className={`p-2 rounded-full shadow-sm transition-colors ${isFavorite ? 'bg-rose-100' : 'bg-white/80'} hover:bg-rose-100`}
@@ -100,7 +99,7 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
   </div>
 </div>
   <hr className="border-slate-100" />
-    <div className="flex flex-col gap-2 -mb-4"> 
+    <div className="flex flex-col gap-2 -mb-4 -mt-4"> 
     <div className="grid grid-cols-3 divide-x divide-slate-100">
         <NutritionStat 
         label="Calories" 
