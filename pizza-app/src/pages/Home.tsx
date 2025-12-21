@@ -126,9 +126,28 @@ useEffect(() => {
         <main className="flex-1 overflow-y-auto p-8 bg-slate-50/50 relative">
           <div className={`transition-all duration-300 ${selectedRecipe ? 'xl:mr-[400px]' : ''}`}>
             <section className="mb-10">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-900">List of Recipes</h2>
-                <p className="text-slate-500 text-sm">recipe names, ingredients, instructions, and images, </p>
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">List of Recipes</h2>
+                  <p className="text-slate-500 text-sm">recipe names, ingredients, instructions, and images, </p>
+                </div>
+                <button className="flex justify-center items-center gap-2 w-32 h-12 cursor-pointer rounded-md shadow-2xl text-white font-semibold bg-gradient-to-r from-[#14b8a6] via-[#059669] to-[#047857] hover:shadow-xl hover:shadow-green-500 hover:scale-105 duration-300 hover:from-[#047857] hover:to-[#14b8a6]">
+                  <svg 
+                    className="w-6 h-6" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" 
+                      strokeLinejoin="round" 
+                      strokeLinecap="round" 
+                    />
+                  </svg>
+                  <span className="text-sm tracking-wide">Add</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
