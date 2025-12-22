@@ -5,6 +5,7 @@ import { Card } from "../components/Card";
 import { Sidebar } from "../components/Sidebar";
 import { Add } from "../components/Add";
 import { NavLink } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Recipe {
   id: number;
@@ -25,8 +26,7 @@ interface Recipe {
 export const Home = () => {
 const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 const [recipes, setRecipes] = useState<Recipe[]>([]);
-const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
-const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(false);
 const [searchQuery, setSearchQuery] = useState('');
 const [mealTypes, setMealTypes] = useState<string[]>([]);
 const [selectedMeals, setSelectedMeals] = useState<Set<string>>(new Set());
@@ -92,21 +92,23 @@ const handleAddRecipe = async (newRecipe: any) => {
       body: JSON.stringify(newRecipe),
     });
     const created = await res.json();
-    const existing = [...allRecipes, ...loadLocalRecipes()];
+    const existing = [...(queryData || []), ...loadLocalRecipes()];
     const maxId = existing.reduce((max, r) => Math.max(max, r.id || 0), 0);
     const recipeWithId: Recipe = { ...newRecipe, id: created?.id ?? maxId + 1 };
     const nextLocal = [recipeWithId, ...loadLocalRecipes()];
     saveLocalRecipes(nextLocal);
-    setMealTypes(computeMealTypes([...allRecipes, ...nextLocal]));
+    setMealTypes(computeMealTypes([...(queryData || []), ...nextLocal]));
     setIsAddOpen(false);
+    await queryClient.invalidateQueries({ queryKey: ['recipes'] });
   } catch (error) {
-    const existing = [...allRecipes, ...loadLocalRecipes()];
+    const existing = [...(queryData || []), ...loadLocalRecipes()];
     const maxId = existing.reduce((max, r) => Math.max(max, r.id || 0), 0);
     const fallback: Recipe = { ...newRecipe, id: maxId + 1 };
     const nextLocal = [fallback, ...loadLocalRecipes()];
     saveLocalRecipes(nextLocal);
-    setMealTypes(computeMealTypes([...allRecipes, ...nextLocal]));
+    setMealTypes(computeMealTypes([...(queryData || []), ...nextLocal]));
     setIsAddOpen(false);
+    await queryClient.invalidateQueries({ queryKey: ['recipes'] });
   } finally {
     setLoading(false);
   }
@@ -115,7 +117,7 @@ const handleAddRecipe = async (newRecipe: any) => {
 // Handlers required by Sidebar to edit or delete a recipe
 const handleEditRecipe = async (updatedRecipe: Recipe) => {
   setLoading(true);
-  const isRemote = allRecipes.some(r => r.id === updatedRecipe.id);
+  const isRemote = (queryData || []).some(r => r.id === updatedRecipe.id);
   if (isRemote) {
     try {
       const res = await fetch(`https://dummyjson.com/recipes/${updatedRecipe.id}`, {
@@ -125,17 +127,17 @@ const handleEditRecipe = async (updatedRecipe: Recipe) => {
       });
       const serverRecipe = await res.json();
       const merged = { ...updatedRecipe, ...serverRecipe } as Recipe;
-      const nextAll = allRecipes.map(r => r.id === merged.id ? { ...r, ...merged } : r);
-      setAllRecipes(nextAll);
+      const nextAll = (queryData || []).map(r => r.id === merged.id ? { ...r, ...merged } : r);
       setRecipes(applyFilters(nextAll));
       setMealTypes(computeMealTypes([...nextAll, ...loadLocalRecipes()]));
       setSelectedRecipe(merged);
+      await queryClient.invalidateQueries({ queryKey: ['recipes'] });
     } catch (error) {
-      const nextAll = allRecipes.map(r => r.id === updatedRecipe.id ? { ...r, ...updatedRecipe } : r);
-      setAllRecipes(nextAll);
+      const nextAll = (queryData || []).map(r => r.id === updatedRecipe.id ? { ...r, ...updatedRecipe } : r);
       setRecipes(applyFilters(nextAll));
       setMealTypes(computeMealTypes([...nextAll, ...loadLocalRecipes()]));
       setSelectedRecipe(updatedRecipe);
+      await queryClient.invalidateQueries({ queryKey: ['recipes'] });
     } finally {
       setLoading(false);
     }
@@ -144,34 +146,36 @@ const handleEditRecipe = async (updatedRecipe: Recipe) => {
     const local = loadLocalRecipes();
     const updatedLocal = local.map(r => r.id === updatedRecipe.id ? { ...r, ...updatedRecipe } : r);
     saveLocalRecipes(updatedLocal);
-    setMealTypes(computeMealTypes([...allRecipes, ...updatedLocal]));
+    setMealTypes(computeMealTypes([...(queryData || []), ...updatedLocal]));
     setSelectedRecipe(updatedRecipe);
     setLoading(false);
+    await queryClient.invalidateQueries({ queryKey: ['recipes'] });
   }
 };
 
 const handleDeleteRecipe = async (id: number) => {
   setLoading(true);
-  const isRemote = allRecipes.some(r => r.id === id);
+  const isRemote = (queryData || []).some(r => r.id === id);
   if (isRemote) {
     try {
       await fetch(`https://dummyjson.com/recipes/${id}`, { method: 'DELETE' });
     } catch (error) {
       // ignore network errors, proceed with local delete of remote list
     }
-    const nextAll = allRecipes.filter(r => r.id !== id);
-    setAllRecipes(nextAll);
+    const nextAll = (queryData || []).filter(r => r.id !== id);
     setRecipes(applyFilters(nextAll));
     setMealTypes(computeMealTypes([...nextAll, ...loadLocalRecipes()]));
     setSelectedRecipe(null);
     setLoading(false);
+    await queryClient.invalidateQueries({ queryKey: ['recipes'] });
   } else {
     const local = loadLocalRecipes();
     const nextLocal = local.filter(r => r.id !== id);
     saveLocalRecipes(nextLocal);
-    setMealTypes(computeMealTypes([...allRecipes, ...nextLocal]));
+    setMealTypes(computeMealTypes([...(queryData || []), ...nextLocal]));
     setSelectedRecipe(null);
     setLoading(false);
+    await queryClient.invalidateQueries({ queryKey: ['recipes'] });
   }
 };
 
@@ -188,63 +192,29 @@ const applyFilters = (data: Recipe[]) => {
   return filtered;
 };
 
-const getAllRecipes = async () => {
-  try {
-    const response = await fetch('https://dummyjson.com/recipes');
-    const data = await response.json();
-    setAllRecipes(data.recipes || []);
-    setMealTypes(computeMealTypes([...(data.recipes || []), ...loadLocalRecipes()]));
-    setLoading(false);
-  } catch (error) {
-    console.error('Error fetching recipes:', error);
-    const local = loadLocalRecipes();
-    setAllRecipes([]);
-    setMealTypes(computeMealTypes(local));
-    setLoading(false);
-  }
-};
+const queryClient = useQueryClient();
 
-//Search
-const searchRecipes = async (query: string) => {
-  if (!query.trim()) {
-    getAllRecipes();
-    return;
-  }
-  
-  try {
-    setLoading(true);
-    const response = await fetch(`https://dummyjson.com/recipes/search?q=${query}`);
-    const data = await response.json();
-    const merged = mergeWithLocal(data.recipes || [], query);
-    setAllRecipes(merged);
-    setRecipes(applyFilters(merged));
-    setMealTypes(computeMealTypes(merged));
-    setLoading(false);
-  } catch (error) {
-    console.error('Error searching recipes:', error);
-    setLoading(false);
-  }
-};
+// Unified query: base list uses API only; search merges local by query
+const { data: queryData, isLoading: queryLoading } = useQuery<Recipe[]>({
+  queryKey: ["recipes", searchQuery],
+  queryFn: async () => {
+    const q = (searchQuery || "").trim();
+    if (!q) {
+      const res = await fetch("https://dummyjson.com/recipes");
+      const data = await res.json();
+      return data.recipes || [];
+    }
+    const res = await fetch(`https://dummyjson.com/recipes/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    return mergeWithLocal(data.recipes || [], q);
+  },
+  placeholderData: (prev) => prev,
+  staleTime: 30_000,
+});
 
 const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const query = e.target.value;
   setSearchQuery(query);
-  searchRecipes(query);
-};
-
-const loadMealTypes = async () => {
-  try {
-    const response = await fetch('https://dummyjson.com/recipes/meal-type/snack');
-    const data = await response.json();
-    const fromEndpoint = data.recipes?.flatMap((r: any) => r.mealType ? (Array.isArray(r.mealType) ? r.mealType : [r.mealType]) : []) || [];
-    const local = loadLocalRecipes();
-    const fromLocal = computeMealTypes(local);
-    setMealTypes(prev => Array.from(new Set([...prev, ...fromEndpoint, ...fromLocal])));
-  } catch (error) {
-    console.error('Error fetching meal types:', error);
-    const local = loadLocalRecipes();
-    setMealTypes(prev => Array.from(new Set([...prev, ...computeMealTypes(local)])));
-  }
 };
 
 
@@ -256,13 +226,15 @@ const toggleMeal = (meal: string) => {
 
 
 useEffect(() => {
-  setRecipes(applyFilters(allRecipes));
-}, [selectedMeals, allRecipes]);
-
-useEffect(() => {
-  getAllRecipes();
-  loadMealTypes();
-}, []);
+  const list = queryData || [];
+  setRecipes(applyFilters(list));
+  const q = (searchQuery || "").trim();
+  if (!q) {
+    setMealTypes(computeMealTypes([...list, ...loadLocalRecipes()]));
+  } else {
+    setMealTypes(computeMealTypes(list));
+  }
+}, [queryData, selectedMeals, searchQuery]);
 
   const NavItem = ({ icon, label, to }: { icon: any, label: string, to: string }) => (
   <NavLink 
@@ -383,7 +355,7 @@ useEffect(() => {
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {loading ? (
+                {queryLoading || loading ? (
                   <p className="text-slate-500">Loading recipes...</p>
                 ) : (
                   recipes.map((recipe, index) => {
