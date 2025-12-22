@@ -1,8 +1,8 @@
 import { LuX, LuHeart, LuChevronDown, LuStar, LuPencil, LuTrash2 } from "react-icons/lu";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit } from "./Edit";
 import { Delete } from "./Delete";
-
+const FAV_LS_KEY = 'favorites';
 interface Recipe {
   id: number;
   name: string;
@@ -25,6 +25,7 @@ interface SidebarProps {
   onClose: () => void;
    onEdit: (updatedRecipe: Recipe) => void; 
   onDelete: (id: number) => void;
+  onFavoriteChange?: (id: number, isFavorite: boolean, recipe?: Recipe) => void;
 }
 
 const NutritionStat = ({ label, value }: { label: string; value: string }) => (
@@ -68,18 +69,44 @@ const Accordion = ({
   );
 };
 
-export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete }: SidebarProps) => {
+export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete, onFavoriteChange }: SidebarProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("Ingredients");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  if (!selectedRecipe) return null;
-
   const handleToggle = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
+  
+  useEffect(() => {
+    if (selectedRecipe) {
+      const favs = JSON.parse(localStorage.getItem(FAV_LS_KEY) || '[]');
+      setIsFavorite(favs.includes(selectedRecipe.id));
+    }
+  }, [selectedRecipe]);
 
+  const toggleFavorite = () => {
+    if (!selectedRecipe) return;
+    const favs = JSON.parse(localStorage.getItem(FAV_LS_KEY) || '[]');
+    let newFavs;
+    
+    if (isFavorite) {
+      newFavs = favs.filter((id: number) => id !== selectedRecipe.id);
+    } else {
+      newFavs = [...favs, selectedRecipe.id];
+    }
+    
+    localStorage.setItem(FAV_LS_KEY, JSON.stringify(newFavs));
+    const nowFav = !isFavorite;
+    setIsFavorite(nowFav);
+    if (onFavoriteChange) {
+      onFavoriteChange(selectedRecipe.id, nowFav, selectedRecipe);
+    }
+  };
+
+  if (!selectedRecipe) return null;
+  
   return (
     <>
     <aside className="fixed right-0 top-16 w-100 bg-white p-6 hidden xl:flex flex-col gap-6 border-l border-gray-100 h-[calc(100vh-4rem)] overflow-y-auto z-10">
@@ -115,16 +142,13 @@ export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete }: SidebarPr
     </button>
 
 
-    <button
-      onClick={() => setIsFavorite(!isFavorite)}
+   <button
+      onClick={toggleFavorite} // Use the new toggle function
       className={`p-2 rounded-full shadow-sm transition-colors ${isFavorite ? 'bg-rose-100' : 'bg-white/80'} hover:bg-rose-100`}
-      title="Favorite"
     >
-      <LuHeart
-        size={20}
-        className={`${isFavorite ? 'text-rose-500 fill-rose-500' : 'text-slate-400'}`}
-      />
+      <LuHeart size={20} className={isFavorite ? 'text-rose-500 fill-rose-500' : 'text-slate-400'} />
     </button>
+  
   </div>
 </div>
   <hr className="border-slate-100" />

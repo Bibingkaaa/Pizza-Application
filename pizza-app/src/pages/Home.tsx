@@ -4,7 +4,7 @@ import { FaHome } from "react-icons/fa";
 import { Card } from "../components/Card";
 import { Sidebar } from "../components/Sidebar";
 import { Add } from "../components/Add";
-
+import { NavLink } from "react-router-dom";
 
 interface Recipe {
   id: number;
@@ -54,8 +54,9 @@ const computeMealTypes = (list: Recipe[]): string[] => {
 };
 
 const mergeWithLocal = (apiList: Recipe[], query?: string): Recipe[] => {
-  const local = loadLocalRecipes();
   const normalized = (query || '').toLowerCase().trim();
+  const local = loadLocalRecipes();
+
   const matchesQuery = (r: Recipe): boolean => {
     if (!normalized) return true;
     const inText = (v?: string) => (v || '').toLowerCase().includes(normalized);
@@ -263,13 +264,25 @@ useEffect(() => {
   loadMealTypes();
 }, []);
 
-  const NavItem = ({ icon, label, active = false }: { icon: any, label: string, active?: boolean }) => (
-    <div className={`flex items-center gap-4 px-4 py-3 rounded-2xl cursor-pointer transition-all ${active ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>
-      <span className="text-xl">{icon}</span>
-      <span className="font-bold text-sm">{label}</span>
-      {active && <div className="ml-auto w-1.5 h-1.5 bg-red-500 rounded-full"></div>}
-    </div>
-  );
+  const NavItem = ({ icon, label, to }: { icon: any, label: string, to: string }) => (
+  <NavLink 
+    to={to}
+    className={({ isActive }) => 
+      `flex items-center gap-4 px-4 py-3 rounded-2xl cursor-pointer transition-all ${
+        isActive 
+          ? 'bg-slate-900 text-white shadow-lg' 
+          : 'text-slate-500 hover:bg-slate-50'
+      }`
+    }
+  >
+    {({ isActive }) => (
+      <>
+        <span className={`text-xl ${isActive ? 'text-white' : ''}`}>{icon}</span>
+        <span className={`font-bold text-sm ${isActive ? 'text-white' : ''}`}>{label}</span>
+      </>
+    )}
+  </NavLink>
+);
 
 
 
@@ -311,8 +324,8 @@ useEffect(() => {
      
         <aside className="w-64 bg-white p-6 hidden lg:flex flex-col gap-6 border-r border-gray-100 overflow-y-auto">
           <div className="space-y-2">
-            <NavItem icon={<FaHome />} label="Home" active />
-            <NavItem icon={<LuHeart />} label="Favorites" />
+            <NavItem icon={<FaHome />} label="Home" to="/" />
+            <NavItem icon={<LuHeart />} label="Favorites" to="/favorites" />
           </div>
 
           <hr className="border-gray-100" />
