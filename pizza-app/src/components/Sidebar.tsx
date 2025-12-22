@@ -1,5 +1,31 @@
 import { LuX, LuHeart, LuChevronDown, LuStar, LuPencil, LuTrash2 } from "react-icons/lu";
 import { useState } from "react";
+import { Edit } from "./Edit";
+import { Delete } from "./Delete";
+
+interface Recipe {
+  id: number;
+  name: string;
+  image: string;
+  prepTimeMinutes: number;
+  rating: number;
+  cuisine: string;
+  caloriesPerServing?: number;
+  difficulty?: string;
+  ingredients?: string[];
+  mealType?: string | string[];
+  reviewCount?: number;
+  tags?: string[];
+  servings?: number;
+  instructions?: string[];
+}
+
+interface SidebarProps {
+  selectedRecipe: Recipe | null;
+  onClose: () => void;
+   onEdit: (updatedRecipe: Recipe) => void; 
+  onDelete: (id: number) => void;
+}
 
 const NutritionStat = ({ label, value }: { label: string; value: string }) => (
   <div className="flex flex-col items-center justify-center py-2">
@@ -42,9 +68,11 @@ const Accordion = ({
   );
 };
 
-export const Sidebar = ({ selectedRecipe, onClose }: any) => {
+export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete }: SidebarProps) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>("Ingredients");
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   if (!selectedRecipe) return null;
 
@@ -53,6 +81,7 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
   };
 
   return (
+    <>
     <aside className="fixed right-0 top-16 w-100 bg-white p-6 hidden xl:flex flex-col gap-6 border-l border-gray-100 h-[calc(100vh-4rem)] overflow-y-auto z-10">
   
       <div className="relative -mx-6 -mt-6">
@@ -70,7 +99,7 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
   <div className="flex items-center gap-2">
 
     <button
-      onClick={() => console.log("Edit clicked")}
+      onClick={() => setIsEditOpen(true)}
       className="p-2 rounded-full shadow-sm bg-white/80 hover:bg-blue-50 transition-colors group"
       title="Edit Recipe"
     >
@@ -78,7 +107,7 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
     </button>
 
     <button
-      onClick={() => console.log("Delete clicked")}
+      onClick={() => setIsDeleteOpen(true)}
       className="p-2 rounded-full shadow-sm bg-white/80 hover:bg-red-50 transition-colors group"
       title="Delete Recipe"
     >
@@ -182,7 +211,6 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
           isOpen={openSection === "Cooking"}
           onToggle={() => handleToggle("Cooking")}
         >
-          {/* FIX: Map through instructions for proper linebreaks and added mt-0 */}
           <ol className="text-sm text-slate-600 space-y-3 px-1 mt-0 list-decimal ml-4">
             {selectedRecipe.instructions?.map((step: string, index: number) => (
               <li key={index} className="pl-1 leading-relaxed">
@@ -193,5 +221,28 @@ export const Sidebar = ({ selectedRecipe, onClose }: any) => {
         </Accordion>
       </div>
     </aside>
+    {selectedRecipe && (
+      <Edit
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        initialData={selectedRecipe}
+        onSave={(updated: any) => {
+          onEdit(updated as Recipe);
+          setIsEditOpen(false);
+        }}
+      />
+    )}
+    {selectedRecipe && (
+      <Delete
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        recipeName={selectedRecipe.name}
+        onConfirm={() => {
+          onDelete(selectedRecipe.id);
+          setIsDeleteOpen(false);
+        }}
+      />
+    )}
+    </>
   );
 };

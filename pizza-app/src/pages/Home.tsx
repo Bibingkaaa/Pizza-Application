@@ -3,6 +3,8 @@ import { LuPizza, LuHeart, LuSearch } from "react-icons/lu";
 import { FaHome } from "react-icons/fa";
 import { Card } from "../components/Card";
 import { Sidebar } from "../components/Sidebar";
+import { Add } from "../components/Add";
+
 
 interface Recipe {
   id: number;
@@ -14,20 +16,163 @@ interface Recipe {
   caloriesPerServing?: number;
   difficulty?: string;
   ingredients?: string[];
-  mealType?: string;
+  mealType?: string | string[];
   reviewCount?: number;
   tags?: string[];
   servings?: number;
 }
 
 export const Home = () => {
-const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
+const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 const [recipes, setRecipes] = useState<Recipe[]>([]);
 const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 const [loading, setLoading] = useState(true);
 const [searchQuery, setSearchQuery] = useState('');
 const [mealTypes, setMealTypes] = useState<string[]>([]);
 const [selectedMeals, setSelectedMeals] = useState<Set<string>>(new Set());
+
+const LS_KEY = 'recipes';
+const loadLocalRecipes = (): Recipe[] => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+const saveLocalRecipes = (list: Recipe[]) => {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(list));
+  } catch {}
+};
+
+const computeMealTypes = (list: Recipe[]): string[] => {
+  return Array.from(new Set(list.flatMap((r: Recipe) => {
+    if (!r.mealType) return [] as string[];
+    return Array.isArray(r.mealType) ? r.mealType : [r.mealType];
+  })));
+};
+
+const mergeWithLocal = (apiList: Recipe[], query?: string): Recipe[] => {
+  const local = loadLocalRecipes();
+  const normalized = (query || '').toLowerCase().trim();
+  const matchesQuery = (r: Recipe): boolean => {
+    if (!normalized) return true;
+    const inText = (v?: string) => (v || '').toLowerCase().includes(normalized);
+    const inArray = (arr?: string[]) => Array.isArray(arr) && arr.some(s => inText(s));
+    return (
+      inText(r.name) ||
+      inText(r.cuisine) ||
+      inText(Array.isArray(r.mealType) ? r.mealType.join(', ') : r.mealType) ||
+      inArray(r.tags) ||
+      inArray(r.ingredients)
+    );
+  };
+
+  const localFiltered = local.filter(matchesQuery);
+  const byId = new Map<number, Recipe>();
+  [...apiList, ...localFiltered].forEach(r => {
+    if (!byId.has(r.id)) {
+      byId.set(r.id, r);
+    } else {
+      byId.set(r.id, { ...byId.get(r.id)!, ...r });
+    }
+  });
+  return Array.from(byId.values());
+};
+
+const [isAddOpen, setIsAddOpen] = useState(false);
+const handleAddRecipe = async (newRecipe: any) => {
+  setLoading(true);
+  try {
+    const res = await fetch('https://dummyjson.com/recipes/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newRecipe),
+    });
+    const created = await res.json();
+    const existing = [...allRecipes, ...loadLocalRecipes()];
+    const maxId = existing.reduce((max, r) => Math.max(max, r.id || 0), 0);
+    const recipeWithId: Recipe = { ...newRecipe, id: created?.id ?? maxId + 1 };
+    const nextLocal = [recipeWithId, ...loadLocalRecipes()];
+    saveLocalRecipes(nextLocal);
+    setMealTypes(computeMealTypes([...allRecipes, ...nextLocal]));
+    setIsAddOpen(false);
+  } catch (error) {
+    const existing = [...allRecipes, ...loadLocalRecipes()];
+    const maxId = existing.reduce((max, r) => Math.max(max, r.id || 0), 0);
+    const fallback: Recipe = { ...newRecipe, id: maxId + 1 };
+    const nextLocal = [fallback, ...loadLocalRecipes()];
+    saveLocalRecipes(nextLocal);
+    setMealTypes(computeMealTypes([...allRecipes, ...nextLocal]));
+    setIsAddOpen(false);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Handlers required by Sidebar to edit or delete a recipe
+const handleEditRecipe = async (updatedRecipe: Recipe) => {
+  setLoading(true);
+  const isRemote = allRecipes.some(r => r.id === updatedRecipe.id);
+  if (isRemote) {
+    try {
+      const res = await fetch(`https://dummyjson.com/recipes/${updatedRecipe.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedRecipe),
+      });
+      const serverRecipe = await res.json();
+      const merged = { ...updatedRecipe, ...serverRecipe } as Recipe;
+      const nextAll = allRecipes.map(r => r.id === merged.id ? { ...r, ...merged } : r);
+      setAllRecipes(nextAll);
+      setRecipes(applyFilters(nextAll));
+      setMealTypes(computeMealTypes([...nextAll, ...loadLocalRecipes()]));
+      setSelectedRecipe(merged);
+    } catch (error) {
+      const nextAll = allRecipes.map(r => r.id === updatedRecipe.id ? { ...r, ...updatedRecipe } : r);
+      setAllRecipes(nextAll);
+      setRecipes(applyFilters(nextAll));
+      setMealTypes(computeMealTypes([...nextAll, ...loadLocalRecipes()]));
+      setSelectedRecipe(updatedRecipe);
+    } finally {
+      setLoading(false);
+    }
+  } else {
+    // Update local recipe
+    const local = loadLocalRecipes();
+    const updatedLocal = local.map(r => r.id === updatedRecipe.id ? { ...r, ...updatedRecipe } : r);
+    saveLocalRecipes(updatedLocal);
+    setMealTypes(computeMealTypes([...allRecipes, ...updatedLocal]));
+    setSelectedRecipe(updatedRecipe);
+    setLoading(false);
+  }
+};
+
+const handleDeleteRecipe = async (id: number) => {
+  setLoading(true);
+  const isRemote = allRecipes.some(r => r.id === id);
+  if (isRemote) {
+    try {
+      await fetch(`https://dummyjson.com/recipes/${id}`, { method: 'DELETE' });
+    } catch (error) {
+      // ignore network errors, proceed with local delete of remote list
+    }
+    const nextAll = allRecipes.filter(r => r.id !== id);
+    setAllRecipes(nextAll);
+    setRecipes(applyFilters(nextAll));
+    setMealTypes(computeMealTypes([...nextAll, ...loadLocalRecipes()]));
+    setSelectedRecipe(null);
+    setLoading(false);
+  } else {
+    const local = loadLocalRecipes();
+    const nextLocal = local.filter(r => r.id !== id);
+    saveLocalRecipes(nextLocal);
+    setMealTypes(computeMealTypes([...allRecipes, ...nextLocal]));
+    setSelectedRecipe(null);
+    setLoading(false);
+  }
+};
 
 const applyFilters = (data: Recipe[]) => {
   let filtered = data;
@@ -46,12 +191,14 @@ const getAllRecipes = async () => {
   try {
     const response = await fetch('https://dummyjson.com/recipes');
     const data = await response.json();
-    console.log(data);
-    setAllRecipes(data.recipes);
-    setMealTypes(Array.from(new Set(data.recipes.flatMap((r: Recipe) => r.mealType ? (Array.isArray(r.mealType) ? r.mealType : [r.mealType]) : []))));
+    setAllRecipes(data.recipes || []);
+    setMealTypes(computeMealTypes([...(data.recipes || []), ...loadLocalRecipes()]));
     setLoading(false);
   } catch (error) {
     console.error('Error fetching recipes:', error);
+    const local = loadLocalRecipes();
+    setAllRecipes([]);
+    setMealTypes(computeMealTypes(local));
     setLoading(false);
   }
 };
@@ -67,8 +214,10 @@ const searchRecipes = async (query: string) => {
     setLoading(true);
     const response = await fetch(`https://dummyjson.com/recipes/search?q=${query}`);
     const data = await response.json();
-    console.log(data);
-    setAllRecipes(data.recipes);
+    const merged = mergeWithLocal(data.recipes || [], query);
+    setAllRecipes(merged);
+    setRecipes(applyFilters(merged));
+    setMealTypes(computeMealTypes(merged));
     setLoading(false);
   } catch (error) {
     console.error('Error searching recipes:', error);
@@ -86,11 +235,14 @@ const loadMealTypes = async () => {
   try {
     const response = await fetch('https://dummyjson.com/recipes/meal-type/snack');
     const data = await response.json();
-    console.log(data);
     const fromEndpoint = data.recipes?.flatMap((r: any) => r.mealType ? (Array.isArray(r.mealType) ? r.mealType : [r.mealType]) : []) || [];
-    setMealTypes(prev => Array.from(new Set([...prev, ...fromEndpoint])));
+    const local = loadLocalRecipes();
+    const fromLocal = computeMealTypes(local);
+    setMealTypes(prev => Array.from(new Set([...prev, ...fromEndpoint, ...fromLocal])));
   } catch (error) {
     console.error('Error fetching meal types:', error);
+    const local = loadLocalRecipes();
+    setMealTypes(prev => Array.from(new Set([...prev, ...computeMealTypes(local)])));
   }
 };
 
@@ -193,7 +345,7 @@ useEffect(() => {
                   <h2 className="text-2xl font-bold text-slate-900">List of Recipes</h2>
                   <p className="text-slate-500 text-sm">recipe names, ingredients, instructions, and images, </p>
                 </div>
-                <button className="flex justify-center items-center gap-2 w-27 h-12 cursor-pointer rounded-md shadow-2xl text-white font-semibold bg-gradient-to-r from-[#14b8a6] via-[#059669] to-[#047857] hover:shadow-xl hover:shadow-green-500 hover:scale-105 duration-300 hover:from-[#047857] hover:to-[#14b8a6]">
+                <button onClick={() => setIsAddOpen(true)} className="flex justify-center items-center gap-2 w-27 h-12 cursor-pointer rounded-lg shadow-2xl text-white font-semibold bg-gradient-to-r from-[#14b8a6] via-[#059669] to-[#047857] hover:shadow-xl hover:shadow-green-500 hover:scale-105 duration-300 hover:from-[#047857] hover:to-[#14b8a6]">
                   <svg 
                     className="w-6 h-6" 
                     stroke="currentColor" 
@@ -211,6 +363,11 @@ useEffect(() => {
                   <span className="text-sm tracking-wide">Add</span>
                 </button>
               </div>
+              <Add 
+                isOpen={isAddOpen} 
+                onClose={() => setIsAddOpen(false)} 
+                onSave={handleAddRecipe} 
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {loading ? (
@@ -234,7 +391,7 @@ useEffect(() => {
           </div>
         </main>
 
-        <Sidebar selectedRecipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />
+        <Sidebar selectedRecipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} onEdit={handleEditRecipe} onDelete={handleDeleteRecipe} />
       </div>
     </div>
   );
