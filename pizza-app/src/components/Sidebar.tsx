@@ -142,8 +142,8 @@ export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete, onFavoriteC
     </button>
 
 
-   <button
-      onClick={toggleFavorite} // Use the new toggle function
+  <button
+    onClick={toggleFavorite}
       className={`p-2 rounded-full shadow-sm transition-colors ${isFavorite ? 'bg-rose-100' : 'bg-white/80'} hover:bg-rose-100`}
     >
       <LuHeart size={20} className={isFavorite ? 'text-rose-500 fill-rose-500' : 'text-slate-400'} />
@@ -191,7 +191,6 @@ export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete, onFavoriteC
   </div>
 </Accordion>
 
-      {/* Info Rows */}
       <div className="space-y-3">
         {[
           { label: "Meal Type", value: Array.isArray(selectedRecipe.mealType) ? selectedRecipe.mealType.join(', ') : selectedRecipe.mealType },
@@ -211,15 +210,13 @@ export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete, onFavoriteC
 
       <hr className="border-slate-100" />
 
-      {/* Ingredients & Instructions */}
-      <div className="-mt-4"> {/* Pulls accordions closer to the HR line */}
+      <div className="-mt-4">
         <Accordion 
           title="Ingredients" 
           subtext={`(${selectedRecipe.servings || 1} servings)`}
           isOpen={openSection === "Ingredients"}
           onToggle={() => handleToggle("Ingredients")}
         >
-          {/* FIX: Added mt-0 to remove top space */}
           <ul className="text-sm text-slate-600 space-y-2 px-1 mt-0">
             {selectedRecipe.ingredients?.map((ingredient: string, index: number) => (
               <li key={index} className="flex gap-2">

@@ -114,7 +114,6 @@ const handleAddRecipe = async (newRecipe: any) => {
   }
 };
 
-// Handlers required by Sidebar to edit or delete a recipe
 const handleEditRecipe = async (updatedRecipe: Recipe) => {
   setLoading(true);
   const isRemote = (queryData || []).some(r => r.id === updatedRecipe.id);
@@ -142,7 +141,6 @@ const handleEditRecipe = async (updatedRecipe: Recipe) => {
       setLoading(false);
     }
   } else {
-    // Update local recipe
     const local = loadLocalRecipes();
     const updatedLocal = local.map(r => r.id === updatedRecipe.id ? { ...r, ...updatedRecipe } : r);
     saveLocalRecipes(updatedLocal);
@@ -160,7 +158,6 @@ const handleDeleteRecipe = async (id: number) => {
     try {
       await fetch(`https://dummyjson.com/recipes/${id}`, { method: 'DELETE' });
     } catch (error) {
-      // ignore network errors, proceed with local delete of remote list
     }
     const nextAll = (queryData || []).filter(r => r.id !== id);
     setRecipes(applyFilters(nextAll));
@@ -194,7 +191,6 @@ const applyFilters = (data: Recipe[]) => {
 
 const queryClient = useQueryClient();
 
-// Unified query: base list uses API only; search merges local by query
 const { data: queryData, isLoading: queryLoading } = useQuery<Recipe[]>({
   queryKey: ["recipes", searchQuery],
   queryFn: async () => {

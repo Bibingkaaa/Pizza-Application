@@ -11,7 +11,6 @@ interface EditProps {
 export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
   const [formData, setFormData] = useState<any>(null);
 
-  // Sync state when initialData changes or modal opens
   useEffect(() => {
     if (initialData) {
       setFormData({ ...initialData });
@@ -20,7 +19,6 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
 
   if (!isOpen || !formData) return null;
 
-  // Helper for Ingredients and Instructions
   const handleArrayChange = (index: number, value: string, field: string) => {
     const newArr = [...formData[field]];
     newArr[index] = value;
@@ -41,7 +39,6 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         
-        {/* Header */}
         <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Edit Recipe</h2>
@@ -52,10 +49,8 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
           
-          {/* Image URL & Preview */}
           <div className="flex flex-col md:flex-row gap-6 items-center bg-slate-50 p-6 rounded-[2rem]">
             <img 
               src={formData.image} 
@@ -75,7 +70,6 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
             </div>
           </div>
 
-          {/* Basic Info Group */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-2 ml-1">Recipe Name</label>
@@ -95,7 +89,6 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
             </div>
           </div>
 
-          {/* Numeric Metrics Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50/50 p-4 rounded-2xl">
             {[
               { label: 'Prep Time', field: 'prepTimeMinutes' },
@@ -115,9 +108,7 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
             ))}
           </div>
 
-          {/* Ingredients & Instructions Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Ingredients */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-bold text-slate-900">Ingredients</label>
@@ -133,7 +124,6 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
               </div>
             </div>
 
-            {/* Instructions */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-bold text-slate-900">Instructions</label>
@@ -151,7 +141,6 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-8 border-t border-slate-100 flex gap-4 bg-white sticky bottom-0">
           <button onClick={onClose} className="flex-1 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-colors">Discard Changes</button>
           <button onClick={() => onSave(formData)} className="flex-1 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-black shadow-lg transition-all">Update Recipe</button>

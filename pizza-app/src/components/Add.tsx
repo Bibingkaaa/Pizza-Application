@@ -17,7 +17,7 @@ const [formData, setFormData] = useState({
     tags: [""],
     rating: 0,
     reviewCount: 0,
-    userId: 166 // Default as per your data
+    userId: 166,
   });
 
   const isNonEmpty = (s: string) => typeof s === 'string' && s.trim().length > 0;
@@ -56,7 +56,6 @@ const [formData, setFormData] = useState({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
-        {/* Header */}
         <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Create Recipe</h2>
@@ -67,10 +66,8 @@ const [formData, setFormData] = useState({
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
           
-          {/* Section 1: Basic Info */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -93,7 +90,6 @@ const [formData, setFormData] = useState({
             </div>
           </div>
 
-          {/* Section 2: Metrics Grid */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Time & Nutrition</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -106,9 +102,7 @@ const [formData, setFormData] = useState({
             </div>
           </div>
 
-          {/* Section 3: Lists (Ingredients & Instructions) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Ingredients */}
             <div>
               <div className="flex justify-between items-center mb-4">
                 <label className="text-sm font-bold text-slate-700">Ingredients</label>
@@ -126,7 +120,6 @@ const [formData, setFormData] = useState({
               ))}
             </div>
 
-            {/* Instructions */}
             <div>
               <div className="flex justify-between items-center mb-4">
                 <label className="text-sm font-bold text-slate-700">Instructions</label>
@@ -146,7 +139,6 @@ const [formData, setFormData] = useState({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
           <button onClick={onClose} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors">Cancel</button>
           <button
