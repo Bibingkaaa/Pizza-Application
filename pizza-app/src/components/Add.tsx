@@ -34,6 +34,7 @@ const [formData, setFormData] = useState({
     hasNonEmpty(formData.ingredients) &&
     hasNonEmpty(formData.instructions)
   );
+  
 
   if (!isOpen) return null;
 
@@ -73,15 +74,15 @@ const [formData, setFormData] = useState({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-slate-700 mb-2 ml-1">Recipe Name</label>
-                <input required type="text" className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-green-500/20" placeholder="e.g. Classic Margherita Pizza" onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                <input type="text" className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 outline-none focus:ring-2 focus:ring-green-500/20" placeholder="e.g. Classic Margherita Pizza" onChange={(e) => setFormData({...formData, name: e.target.value})} />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-2 ml-1">Cuisine</label>
-                <input required type="text" className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 outline-none" value={formData.cuisine} onChange={(e) => setFormData({...formData, cuisine: e.target.value})} />
+                <input type="text" className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 outline-none" value={formData.cuisine} onChange={(e) => setFormData({...formData, cuisine: e.target.value})} />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-2 ml-1">Difficulty</label>
-                <select required className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 outline-none" onChange={(e) => setFormData({...formData, difficulty: e.target.value})}>
+                <select className="w-full bg-slate-50 border-none rounded-2xl py-3 px-4 outline-none" onChange={(e) => setFormData({...formData, difficulty: e.target.value})}>
                   <option>Easy</option>
                   <option>Medium</option>
                   <option>Hard</option>
@@ -96,7 +97,7 @@ const [formData, setFormData] = useState({
               {['prepTimeMinutes', 'cookTimeMinutes', 'caloriesPerServing', 'servings'].map((field) => (
                 <div key={field}>
                   <label className="block text-[10px] font-bold text-slate-500 mb-2 ml-1 uppercase">{field.replace(/([A-Z])/g, ' $1')}</label>
-                  <input required type="number" className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 outline-none" onChange={(e) => setFormData({...formData, [field]: parseInt(e.target.value)})} />
+                  <input type="number" className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 outline-none" onChange={(e) => setFormData({...formData, [field]: parseInt(e.target.value)})} />
                 </div>
               ))}
             </div>
@@ -112,7 +113,7 @@ const [formData, setFormData] = useState({
               </div>
               {formData.ingredients.map((ing, idx) => (
                 <div key={idx} className="flex gap-2 mb-2">
-                  <input required type="text" className="flex-1 bg-slate-50 border-none rounded-xl py-2 px-4 outline-none text-sm" value={ing} onChange={(e) => handleArrayChange(idx, e.target.value, "ingredients")} />
+                  <input type="text" className="flex-1 bg-slate-50 border-none rounded-xl py-2 px-4 outline-none text-sm" value={ing} onChange={(e) => handleArrayChange(idx, e.target.value, "ingredients")} />
                   {formData.ingredients.length > 1 && (
                     <button onClick={() => removeField(idx, "ingredients")} className="p-2 text-slate-300 hover:text-red-500"><LuTrash2 size={16}/></button>
                   )}
@@ -129,9 +130,29 @@ const [formData, setFormData] = useState({
               </div>
               {formData.instructions.map((step, idx) => (
                 <div key={idx} className="flex gap-2 mb-2">
-                  <textarea required className="flex-1 bg-slate-50 border-none rounded-xl py-2 px-4 outline-none text-sm min-h-[40px]" value={step} onChange={(e) => handleArrayChange(idx, e.target.value, "instructions")} />
+                  <textarea className="flex-1 bg-slate-50 border-none rounded-xl py-2 px-4 outline-none text-sm min-h-[40px]" value={step} onChange={(e) => handleArrayChange(idx, e.target.value, "instructions")} />
                   {formData.instructions.length > 1 && (
                     <button onClick={() => removeField(idx, "instructions")} className="p-2 text-slate-300 hover:text-red-500"><LuTrash2 size={16}/></button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Tags</h3>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <label className="text-sm font-bold text-slate-700">Tags</label>
+                <button onClick={() => addField("tags")} className="p-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors">
+                  <LuPlus size={16}/>
+                </button>
+              </div>
+              {formData.tags.map((tag, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <input type="text" className="flex-1 bg-slate-50 border-none rounded-xl py-2 px-4 outline-none text-sm" value={tag} onChange={(e) => handleArrayChange(idx, e.target.value, "tags")} />
+                  {formData.tags.length > 1 && (
+                    <button onClick={() => removeField(idx, "tags")} className="p-2 text-slate-300 hover:text-red-500"><LuTrash2 size={16}/></button>
                   )}
                 </div>
               ))}
@@ -142,9 +163,8 @@ const [formData, setFormData] = useState({
         <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
           <button onClick={onClose} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors">Cancel</button>
           <button
-            disabled={!isValid}
-            onClick={() => isValid && onSave(formData)}
-            className={`flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition-all ${isValid ? 'bg-green-600 hover:bg-green-700 shadow-green-200' : 'bg-slate-300 cursor-not-allowed'}`}
+            onClick={() => onSave(formData)}
+            className="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition-all bg-green-600 hover:bg-green-700 shadow-green-200"
           >
             Create Recipe
           </button>

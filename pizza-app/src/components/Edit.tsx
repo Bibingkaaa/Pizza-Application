@@ -13,7 +13,12 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...initialData });
+      setFormData({
+        ...initialData,
+        ingredients: Array.isArray(initialData.ingredients) ? initialData.ingredients : [""],
+        instructions: Array.isArray(initialData.instructions) ? initialData.instructions : [""],
+        tags: Array.isArray(initialData.tags) ? initialData.tags : [""],
+      });
     }
   }, [initialData, isOpen]);
 
@@ -137,6 +142,21 @@ export const Edit = ({ isOpen, onClose, onSave, initialData }: EditProps) => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-bold text-slate-900">Tags</label>
+              <button onClick={() => addField("tags")} className="text-green-600 hover:bg-green-50 p-1 rounded-md transition-colors"><LuPlus size={20}/></button>
+            </div>
+            <div className="space-y-2">
+              {formData.tags.map((tag: string, idx: number) => (
+                <div key={idx} className="flex gap-2">
+                  <input type="text" className="flex-1 bg-slate-50 border-none rounded-xl py-2 px-4 outline-none text-sm" value={tag} onChange={(e) => handleArrayChange(idx, e.target.value, "tags")} />
+                  <button onClick={() => removeField(idx, "tags")} className="text-slate-300 hover:text-red-500 transition-colors"><LuTrash2 size={18}/></button>
+                </div>
+              ))}
             </div>
           </div>
         </div>

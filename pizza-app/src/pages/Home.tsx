@@ -94,19 +94,44 @@ const handleAddRecipe = async (newRecipe: any) => {
     const created = await res.json();
     const existing = [...(queryData || []), ...loadLocalRecipes()];
     const maxId = existing.reduce((max, r) => Math.max(max, r.id || 0), 0);
-    const recipeWithId: Recipe = { ...newRecipe, id: created?.id ?? maxId + 1 };
+    const sanitizeArray = (arr?: string[]) => Array.isArray(arr) ? arr.map(s => (s || '').trim()).filter(s => s.length > 0) : [];
+    const recipeBase = {
+      ...newRecipe,
+      tags: sanitizeArray(newRecipe.tags),
+      ingredients: sanitizeArray(newRecipe.ingredients),
+      instructions: sanitizeArray(newRecipe.instructions),
+    };
+    const recipeWithId: Recipe = { ...recipeBase, id: created?.id ?? maxId + 1 };
     const nextLocal = [recipeWithId, ...loadLocalRecipes()];
     saveLocalRecipes(nextLocal);
     setMealTypes(computeMealTypes([...(queryData || []), ...nextLocal]));
+    // Immediately reflect new recipe in UI without waiting for refetch
+    const mergedNow = mergeWithLocal(queryData || [], searchQuery);
+    setRecipes(applyFilters(mergedNow));
+    // Update query cache so downstream effects pick up the merged list
+    queryClient.setQueryData(["recipes", searchQuery], mergedNow);
+    setSelectedRecipe(recipeWithId);
     setIsAddOpen(false);
     await queryClient.invalidateQueries({ queryKey: ['recipes'] });
   } catch (error) {
     const existing = [...(queryData || []), ...loadLocalRecipes()];
     const maxId = existing.reduce((max, r) => Math.max(max, r.id || 0), 0);
-    const fallback: Recipe = { ...newRecipe, id: maxId + 1 };
+    const sanitizeArray = (arr?: string[]) => Array.isArray(arr) ? arr.map(s => (s || '').trim()).filter(s => s.length > 0) : [];
+    const recipeBase = {
+      ...newRecipe,
+      tags: sanitizeArray(newRecipe.tags),
+      ingredients: sanitizeArray(newRecipe.ingredients),
+      instructions: sanitizeArray(newRecipe.instructions),
+    };
+    const fallback: Recipe = { ...recipeBase, id: maxId + 1 };
     const nextLocal = [fallback, ...loadLocalRecipes()];
     saveLocalRecipes(nextLocal);
     setMealTypes(computeMealTypes([...(queryData || []), ...nextLocal]));
+    // Immediately reflect new recipe in UI even if server call failed
+    const mergedNow = mergeWithLocal(queryData || [], searchQuery);
+    setRecipes(applyFilters(mergedNow));
+    queryClient.setQueryData(["recipes", searchQuery], mergedNow);
+    setSelectedRecipe(fallback);
     setIsAddOpen(false);
     await queryClient.invalidateQueries({ queryKey: ['recipes'] });
   } finally {
@@ -198,7 +223,7 @@ const { data: queryData, isLoading: queryLoading } = useQuery<Recipe[]>({
     if (!q) {
       const res = await fetch("https://dummyjson.com/recipes");
       const data = await res.json();
-      return data.recipes || [];
+      return mergeWithLocal(data.recipes || []);
     }
     const res = await fetch(`https://dummyjson.com/recipes/search?q=${encodeURIComponent(q)}`);
     const data = await res.json();
@@ -223,13 +248,9 @@ const toggleMeal = (meal: string) => {
 
 useEffect(() => {
   const list = queryData || [];
-  setRecipes(applyFilters(list));
-  const q = (searchQuery || "").trim();
-  if (!q) {
-    setMealTypes(computeMealTypes([...list, ...loadLocalRecipes()]));
-  } else {
-    setMealTypes(computeMealTypes(list));
-  }
+  const merged = mergeWithLocal(list, searchQuery);
+  setRecipes(applyFilters(merged));
+  setMealTypes(computeMealTypes(merged));
 }, [queryData, selectedMeals, searchQuery]);
 
   const NavItem = ({ icon, label, to }: { icon: any, label: string, to: string }) => (

@@ -176,18 +176,21 @@ export const Sidebar = ({ selectedRecipe, onClose, onEdit, onDelete, onFavoriteC
   onToggle={() => handleToggle("Tags")}
 >
   <div className="flex flex-wrap gap-x-2 gap-y-2.5 px-1 mt-0 pt-0">
-    {selectedRecipe.tags && selectedRecipe.tags.length > 0 ? (
-      selectedRecipe.tags.map((tag: string, index: number) => (
-        <span 
-          key={index} 
-          className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-default"
-        >
-          {tag}
-        </span>
-      ))
-    ) : (
-      <p className="text-sm text-slate-400 mt-0">No tags categorized for this recipe.</p>
-    )}
+    {(() => {
+      const validTags = (selectedRecipe.tags || []).filter(t => !!t && t.trim().length > 0);
+      return validTags.length > 0 ? (
+        validTags.map((tag: string, index: number) => (
+          <span 
+            key={index} 
+            className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-100 hover:bg-emerald-100 transition-colors cursor-default"
+          >
+            {tag}
+          </span>
+        ))
+      ) : (
+        <p className="text-sm text-slate-400 mt-0">No tags categorized for this recipe.</p>
+      );
+    })()}
   </div>
 </Accordion>
 
