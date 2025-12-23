@@ -42,6 +42,10 @@ export const Favorites = () => {
     return raw ? JSON.parse(raw) : [];
   };
 
+  const setLocalRecipes = (recipes: Recipe[]) => {
+    localStorage.setItem(RECIPE_LS_KEY, JSON.stringify(recipes));
+  };
+
   const fetchAndFilterFavorites = async () => {
     setLoading(true);
     try {
@@ -109,6 +113,30 @@ export const Favorites = () => {
     const next = new Set(selectedMeals);
     next.has(meal) ? next.delete(meal) : next.add(meal);
     setSelectedMeals(next);
+  };
+
+  const handleDelete = (id: number) => {
+    // Remove from local recipes if it exists there
+    const local = getLocalRecipes();
+    const existsLocally = local.some(r => r.id === id);
+    if (existsLocally) {
+      const updatedLocal = local.filter(r => r.id !== id);
+      setLocalRecipes(updatedLocal);
+    }
+
+    // Always remove from favorites list
+    const favIds = getFavoriteIds();
+    const updatedFavIds = favIds.filter(fid => fid !== id);
+    localStorage.setItem(FAV_LS_KEY, JSON.stringify(updatedFavIds));
+
+    // Update in-memory state
+    setFavoriteRecipes(prev => {
+      const next = prev.filter(r => r.id !== id);
+      setMealTypes(computeMealTypes(next));
+      return next;
+    });
+
+    if (selectedRecipe?.id === id) setSelectedRecipe(null);
   };
 
   const NavItem = ({ icon, label, to }: { icon: any, label: string, to: string }) => (
@@ -217,8 +245,18 @@ export const Favorites = () => {
         <Sidebar 
           selectedRecipe={selectedRecipe} 
           onClose={() => setSelectedRecipe(null)} 
-          onEdit={() => {}} 
-          onDelete={() => {}} 
+          onEdit={(updated) => {
+            const local = getLocalRecipes();
+            const idx = local.findIndex(r => r.id === updated.id);
+            if (idx !== -1) {
+              const updatedLocal = [...local];
+              updatedLocal[idx] = { ...updatedLocal[idx], ...updated };
+              setLocalRecipes(updatedLocal);
+            }
+            setFavoriteRecipes(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
+            setSelectedRecipe(prev => (prev && prev.id === updated.id ? { ...prev, ...updated } : prev));
+          }} 
+          onDelete={handleDelete} 
           onFavoriteChange={(id, isFav, recipe) => {
             setFavoriteRecipes(prev => {
               if (!isFav) {
