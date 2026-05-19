@@ -163,8 +163,13 @@ const [formData, setFormData] = useState({
         <div className="p-8 border-t border-slate-100 flex gap-4 bg-slate-50/50">
           <button onClick={onClose} className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-50 transition-colors">Cancel</button>
           <button
-            onClick={() => onSave(formData)}
-            className="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition-all bg-green-600 hover:bg-green-700 shadow-green-200"
+            type="button"
+            disabled={!isValid}
+            onClick={() => {
+              if (!isValid) return;
+              onSave(formData);
+            }}
+            className="flex-1 py-4 text-white font-bold rounded-2xl shadow-lg transition-all bg-green-600 hover:bg-green-700 shadow-green-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-600"
           >
             Create Recipe
           </button>
